@@ -1,0 +1,1 @@
+./src/checks/level2/README-missing-typeinfo.md
