@@ -23,6 +23,8 @@
 #ifndef CLAZY_MINI_AST_DUMPER
 #define CLAZY_MINI_AST_DUMPER
 
+#include "cbor.h"
+
 #include <clang/AST/ASTConsumer.h>
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/AST/RecursiveASTVisitor.h>
@@ -40,6 +42,8 @@ class Decl;
 class Stmt;
 }
 
+class AccessSpecifierManager;
+
 class MiniAstDumperASTAction : public clang::PluginASTAction
 {
 public:
@@ -54,7 +58,7 @@ class MiniASTDumperConsumer
     , public clang::RecursiveASTVisitor<MiniASTDumperConsumer>
 {
 public:
-    explicit MiniASTDumperConsumer();
+    explicit MiniASTDumperConsumer(clang::CompilerInstance &ci);
     ~MiniASTDumperConsumer() override;
 
     bool VisitDecl(clang::Decl *decl);
@@ -63,6 +67,33 @@ public:
 
 private:
     MiniASTDumperConsumer(const MiniASTDumperConsumer &) = delete;
+    void dumpCXXMethodDecl(clang::CXXMethodDecl *, CborEncoder *encoder, bool printType = false);
+    void dumpFunctionDecl(clang::FunctionDecl *, CborEncoder *encoder);
+    void dumpCXXRecordDecl(clang::CXXRecordDecl *, CborEncoder *encoder);
+    void dumpCallExpr(clang::CallExpr *, CborEncoder *encoder);
+    void dumpLocation(clang::SourceLocation, CborEncoder *encoder);
+    void dumpFileMap(CborEncoder *encoder);
+
+    void cborEncodeString(CborEncoder&, const char *);
+    void cborEncodeInt(CborEncoder&, int64_t);
+    void cborEncodeBool(CborEncoder &enc, bool);
+    void cborCreateMap(CborEncoder *encoder, CborEncoder *mapEncoder, size_t length);
+    void cborCreateArray(CborEncoder *encoder, CborEncoder *mapEncoder, size_t length);
+    void cborCloseContainer(CborEncoder *encoder, const CborEncoder *containerEncoder);
+    bool alreadySeen(const clang::FunctionDecl*) const;
+    bool alreadySeen(const clang::CXXRecordDecl*) const;
+
+    uint8_t *m_cborBuf = nullptr;
+    size_t m_bufferSize = 1024 * 1024 * 20; // 20MB to start with
+    CborEncoder m_cborEncoder, m_cborRootMapEncoder, m_cborStuffArray;
+    clang::CompilerInstance &m_ci;
+    std::unordered_map<unsigned int, std::string> m_fileIds;
+
+    std::string m_currentCppFile;
+
+    AccessSpecifierManager *const m_accessSpecifierManager;
+    std::set<const clang::FunctionDecl*> m_seenFunctions;
+    std::set<const clang::CXXRecordDecl*> m_seenClasses;
 };
 
 #endif
