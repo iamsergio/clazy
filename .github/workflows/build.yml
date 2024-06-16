@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    runs-on:  ubuntu-latest
+    runs-on:  ubuntu-24.04
     strategy:
       fail-fast: true
 
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update -qq
-          sudo apt install ninja-build -y
+          sudo apt install ninja-build clang clang-tools libclang-dev cmake llvm -y
 
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -36,5 +36,5 @@ jobs:
       - name: Configure
         run: cmake --preset=dev
 
-      - name: Build 
+      - name: Build
         run: cmake --build ./build-dev

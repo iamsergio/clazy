@@ -25,13 +25,16 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo brew install ninja
+          brew install --with-clang llvm
 
       - name: Checkout sources
         uses: actions/checkout@v4
 
       - name: Configure
         run: cmake --preset=dev
+        env:
+          CXX: clang++
+          LLVM_ROOT: /usr/local/opt/llvm
 
       - name: Build
         run: cmake --build ./build-dev
