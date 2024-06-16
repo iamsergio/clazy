@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install llvm ninja
+          brew install llvm ninja coreutils
 
       - name: Checkout sources
         uses: actions/checkout@v4
