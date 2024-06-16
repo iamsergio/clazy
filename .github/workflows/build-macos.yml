@@ -2,7 +2,7 @@
 # SPDX-FileContributor: Sérgio Martins <sergio.martins@kdab.com>
 # SPDX-License-Identifier: LGPL-2.0-or-later
 
-name: CI
+name: macOS CI
 
 on:
   push:
