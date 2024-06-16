@@ -134,7 +134,6 @@ macro(link_to_llvm name is_standalone)
     target_link_libraries(${name} clangTooling)
     target_link_libraries(${name} clangToolingCore)
     target_link_libraries(${name} ${clang_tooling_refactoring_lib})
-    target_link_libraries(${name} clangAPINotes)
   endif()
 
   foreach(llvm_lib ${LLVM_LIBS})
