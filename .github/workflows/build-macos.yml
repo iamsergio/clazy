@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2024 Klarälvdalens Datakonsult AB a KDAB Group company info@kdab.com
+# SPDX-FileContributor: Sérgio Martins <sergio.martins@kdab.com>
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on:  macos-13
+
+    steps:
+      - name: Install Qt 6.6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: 6.6.3
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          sudo brew install ninja
+
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset=dev
+
+      - name: Build
+        run: cmake --build ./build-dev
