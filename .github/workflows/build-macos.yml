@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install --with-clang llvm
+          brew install llvm
 
       - name: Checkout sources
         uses: actions/checkout@v4
