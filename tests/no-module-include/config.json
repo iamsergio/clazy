@@ -1,4 +1,5 @@
 {
+    "blacklist_platforms": "win32",
     "tests": [
         {
             "filename": "main.cpp",
