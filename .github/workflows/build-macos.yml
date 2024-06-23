@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2024 Klarälvdalens Datakonsult AB a KDAB Group company info@kdab.com
+# SPDX-FileContributor: Sérgio Martins <sergio.martins@kdab.com>
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
+name: macOS CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - macos-13
+          - macos-14
+        qt:
+          - 6.6.3
+          - 5.15.2
+
+    steps:
+      - name: Install Qt ${{ matrix.qt }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt }}
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          brew install llvm ninja coreutils
+
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: LLVM_ROOT=$(brew --prefix llvm) cmake --preset=dev
+        env:
+          CXX: clang++
+
+      - name: Build
+        run: cmake --build ./build-dev
+

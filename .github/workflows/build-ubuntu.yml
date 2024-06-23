@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2024 Klarälvdalens Datakonsult AB a KDAB Group company info@kdab.com
+# SPDX-FileContributor: Sérgio Martins <sergio.martins@kdab.com>
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
+name: Ubuntu CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os.name }}
+    strategy:
+      matrix:
+        os:
+          - name: ubuntu-24.04
+            runs_tests: 'true'
+          - name: ubuntu-22.04
+            runs_tests: 'false' # Compiler segfault
+        qt:
+          - version: 6.6.3
+            extra_modules: qtnetworkauth qtscxml qtmultimedia
+          - version: 5.15.2
+            extra_modules: qtnetworkauth
+
+    steps:
+      - name: Install Qt ${{ matrix.qt.version }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt.version }}
+          cache: true
+          modules: ${{ matrix.qt.extra_modules }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt update -qq
+          sudo apt install ninja-build clang clang-tools libclang-dev cmake llvm -y
+
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake --preset=dev
+
+      - name: Build
+        run: cmake --build ./build-dev
+
+      - name: set envs
+        run: |
+          echo "LD_LIBRARY_PATH=$PWD/build-dev/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+          echo "PATH=$PWD/build-dev:$PWD/build-dev/bin:$PATH" >> $GITHUB_ENV
+
+
+      - name: Tests
+        if: ${{ matrix.os.runs_tests == 'true' }}
+        run: |
+          chmod +x build-dev/clazy
+          python3 tests/run_tests.py

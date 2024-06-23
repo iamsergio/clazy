@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2024 Klarälvdalens Datakonsult AB a KDAB Group company info@kdab.com
+# SPDX-FileContributor: Sérgio Martins <sergio.martins@kdab.com>
+# SPDX-License-Identifier: LGPL-2.0-or-later
+
+name: Windows CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+        qt:
+          - version: 6.6.3
+            extra_modules: qtnetworkauth qtscxml qtmultimedia
+          - version: 5.15.2
+            extra_modules: qtnetworkauth
+
+    steps:
+      - name: Install Qt ${{ matrix.qt.version }}
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ matrix.qt.version }}
+          cache: true
+          modules: ${{ matrix.qt.extra_modules }}
+
+      - name: Install ninja-build tool (must be after Qt due PATH changes)
+        uses: turtlesec-no/get-ninja@main
+
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Set up LLVM cache
+        id: llvm-cache-file
+        uses: actions/cache@v4
+        with:
+          path: llvm-18.1.7-msvc2022.tgz
+          key: llvm-cache-${{ hashFiles('llvm-18.1.7-msvc2022.tgz') }}
+          restore-keys: |
+            llvm-cache-
+
+      - name: Download LLVM
+        if: steps.llvm-cache-file.outputs.cache-hit != 'true'
+        run: |
+          C:\msys64\usr\bin\wget.exe https://github.com/KDABLabs/llvm-project/releases/download/v18.1.7-clazy/llvm-18.1.7-msvc2022.tgz
+
+      - name: Unzip LLVM
+        run: |
+          tar xvf llvm-18.1.7-msvc2022.tgz
+          cmake --version
+
+      - name: Set PATH and LLVM_INSTALL_DIR
+        run: |
+          echo "PATH=$env:GITHUB_WORKSPACE/llvm-msvc2022/bin;$env:GITHUB_WORKSPACE/build-msvc-release/bin;$env:PATH" >> $env:GITHUB_ENV
+          echo "LLVM_INSTALL_DIR=$env:GITHUB_WORKSPACE/llvm-msvc2022" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Make sure MSVC is found when Ninja generator is in use
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure
+        run: |
+          cmake -DCLANG_LIBRARY_IMPORT=$LLVM_INSTALL_DIR/lib/clang.lib --preset=msvc-release
+        env:
+          LLVM_ROOT: llvm-msvc2022
+        shell: bash
+
+      - name: Build
+        run: cmake --build build-msvc-release
+
+      - name: Tests
+        run: |
+          python3 tests/run_tests.py -v
